@@ -11,3 +11,4 @@ path = "src/main.rs"
 tokio = {workspace = true}
 arrow-flight = {workspace = true}
 tonic = {workspace = true}
+futures = { workspace = true }
