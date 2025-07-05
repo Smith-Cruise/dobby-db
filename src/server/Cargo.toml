@@ -8,3 +8,6 @@ name = "server"
 path = "src/main.rs"
 
 [dependencies]
+tokio = {workspace = true}
+arrow-flight = {workspace = true}
+tonic = {workspace = true}
