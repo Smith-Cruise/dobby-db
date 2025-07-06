@@ -1,11 +1,13 @@
+use std::sync::Arc;
+use arrow_array::{RecordBatch, StringArray};
 use futures::stream::BoxStream;
 use tonic::{Request, Response, Status, Streaming};
 
-use arrow_flight::{
-    flight_service_server::FlightService, Action,
-    ActionType, Criteria, Empty, FlightData, FlightDescriptor, FlightInfo, HandshakeRequest,
-    HandshakeResponse, PollInfo, PutResult, SchemaResult, Ticket,
-};
+use arrow_flight::{flight_service_server::FlightService, Action, ActionType, Criteria, Empty, FlightData, FlightDescriptor, FlightEndpoint, FlightInfo, HandshakeRequest, HandshakeResponse, PollInfo, PutResult, SchemaResult, Ticket};
+use arrow_flight::encode::FlightDataEncoderBuilder;
+use arrow_schema::{DataType, Field, Schema};
+use futures::TryStreamExt;
+use tonic::codegen::Bytes;
 
 #[derive(Clone)]
 pub struct FlightServiceImpl {}
@@ -30,7 +32,20 @@ impl FlightService for FlightServiceImpl {
         &self,
         _request: Request<FlightDescriptor>,
     ) -> Result<Response<FlightInfo>, Status> {
-        Err(Status::unimplemented("Implement get_flight_info"))
+        // request.get_ref().r#type()
+        let catalog_schema = Schema::new(vec![Field::new("catalog_name", DataType::Utf8, false)]);
+        let ticket = Ticket {
+            ticket: Bytes::from(b"get_catalogs".to_vec())
+        };
+
+        // 2. 创建 FlightEndpoint（包含 Ticket 和服务器地址）
+        let endpoint = FlightEndpoint::new()
+            .with_ticket(ticket);
+        let flight_info = FlightInfo::new()
+            .with_endpoint(endpoint)
+            .try_with_schema(&catalog_schema)
+            .map_err(|e| Status::internal(e.to_string()))?;
+        Ok(Response::new(flight_info))
     }
     async fn poll_flight_info(
         &self,
@@ -49,9 +64,26 @@ impl FlightService for FlightServiceImpl {
 
     async fn do_get(
         &self,
-        _request: Request<Ticket>,
+        request: Request<Ticket>,
     ) -> Result<Response<Self::DoGetStream>, Status> {
-        Err(Status::unimplemented("Implement do_get"))
+        let ticket = request.get_ref();
+        if ticket.ticket == Bytes::from("get_catalogs") {
+            // 返回目录数据的 RecordBatch
+            let catalog_schema = Arc::new(Schema::new(vec![Field::new("catalog_name", DataType::Utf8, false)]));
+            let catalogs = StringArray::from(vec!["default", "system"]);
+            let batch = RecordBatch::try_new(
+                Arc::clone(&catalog_schema),
+                vec![Arc::new(catalogs)],
+            ).map_err(|e| Status::internal(e.to_string()))?;
+
+            let stream = FlightDataEncoderBuilder::new()
+                .with_schema(Arc::clone(&catalog_schema))
+                .build(futures::stream::once(async { Ok(batch) }))
+                .map_err(|e| Status::internal(e.to_string()));
+            Ok(Response::new(Box::pin(stream)))
+        } else { 
+            Err(Status::unimplemented("Implement do_get"))
+        }
     }
 
     type DoPutStream = BoxStream<'static, Result<PutResult, Status>>;

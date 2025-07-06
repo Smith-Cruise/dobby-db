@@ -12,3 +12,5 @@ tokio = {workspace = true}
 arrow-flight = {workspace = true}
 tonic = {workspace = true}
 futures = { workspace = true }
+arrow-schema = { workspace = true }
+arrow-array = { workspace = true }
