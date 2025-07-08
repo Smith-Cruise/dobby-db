@@ -6,7 +6,7 @@ mod flight;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let addr = "[::]:8081".parse()?;
-    let service = flight::flight_sql_server::FlightServiceImpl {};
+    let service = flight::flight_sql_server::DobbyDBFlightService {};
 
     let svc = FlightServiceServer::new(service);
 
