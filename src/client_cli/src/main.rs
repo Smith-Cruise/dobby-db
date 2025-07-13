@@ -305,6 +305,7 @@ fn construct_record_batch_from_params(
     Ok(RecordBatch::try_from_iter(items)?)
 }
 
+#[warn(dead_code)]
 fn setup_logging(args: LoggingArgs) -> Result<()> {
     use tracing_subscriber::{util::SubscriberInitExt, EnvFilter, FmtSubscriber};
 

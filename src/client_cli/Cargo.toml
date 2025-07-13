@@ -1,10 +1,10 @@
 [package]
-name = "client-cli"
-version = "0.1.0"
-edition = "2024"
+name = "dobbydb-client-cli"
+version = {workspace = true}
+edition = {workspace = true}
 
 [[bin]]
-name = "client-cli"
+name = "dobbydb-client-cli"
 path = "src/main.rs"
 
 

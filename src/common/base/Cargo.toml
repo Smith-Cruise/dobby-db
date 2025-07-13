@@ -1,0 +1,7 @@
+[package]
+name = "dobbydb-common-base"
+version = {workspace = true}
+edition = {workspace = true}
+authors.workspace = true
+
+[dependencies]

@@ -1,15 +1,15 @@
-[package]
-name = "dobby-db"
+[workspace.package]
 version = "0.1.0"
 edition = "2024"
+authors = ["Smith Cruise"]
 
 [workspace]
 resolver="2"
 members = [
-    "src/client-cli",
+    "src/client_cli", "src/common/base",
+    "src/common/catalog",
     "src/server"
 ]
-
 
 [workspace.dependencies]
 arrow-flight = { version = "55.2.0", features = ["cli","flight-sql","tls"] }
@@ -21,4 +21,4 @@ arrow-cast = "55.2.0"
 arrow-schema = "55.2.0"
 futures = "0.3.31"
 
-[dependencies]
+dobbydb-common-base = {path = "src/common/base"}

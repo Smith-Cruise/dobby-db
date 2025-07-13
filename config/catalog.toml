@@ -1,0 +1,7 @@
+[[hive]]
+name = "hms_catalog"
+hms_url = "thrift:127.0.0.1:9083"
+
+[[iceberg]]
+name = "iceberg_catalog"
+url = "123"
