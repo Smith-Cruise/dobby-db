@@ -39,16 +39,24 @@ impl CatalogManager {
     pub fn init(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let toml_str = fs::read_to_string("../../../config/catalog.toml")?;
         let catalog_configs: CatalogConfigs = toml::from_str(&toml_str)?;
-        let name_set: HashSet<String> = HashSet::new();
+        let mut name_set: HashSet<String> = HashSet::new();
 
         for each in &catalog_configs.hive {
             if name_set.contains(&each.name) {
                 return Err(Box::new(DobbyDBError::InvalidArgument("duplicate catalog name".to_string())));
             }
             self.catalog_definitions.push(CatalogDefinition::Hive(each.clone()));
+            name_set.insert(each.name.clone());
         }
 
-        dbg!("print catalog: {:#?}", catalog_configs);
+        for each in &catalog_configs.iceberg {
+            if name_set.contains(&each.name) {
+                return Err(Box::new(DobbyDBError::InvalidArgument("duplicate catalog name".to_string())));
+            }
+            self.catalog_definitions.push(CatalogDefinition::Iceberg(each.clone()));
+            name_set.insert(each.name.clone());
+        }
+
         Ok(())
     }
 }
