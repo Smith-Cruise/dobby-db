@@ -1,18 +1,19 @@
 use std::{fs};
 use std::collections::HashSet;
+use std::sync::{LazyLock, Mutex};
 use serde::Deserialize;
 use dobbydb_common_base::error::DobbyDBError;
 
 #[derive(Debug, Clone, Deserialize)]
-struct IcebergCatalogDefinition {
-    name: String,
-    url: String
+pub struct IcebergCatalogDefinition {
+    pub name: String,
+    pub url: String
 }
 
 #[derive(Debug, Clone, Deserialize)]
-struct HiveCatalogDefinition {
-    name: String,
-    hms_url: String
+pub struct HiveCatalogDefinition {
+    pub name: String,
+    pub hms_url: String
 }
 
 #[derive(Debug, Deserialize)]
@@ -26,6 +27,10 @@ pub enum CatalogDefinition {
     Hive(HiveCatalogDefinition),
 }
 
+pub static CATALOG_MANAGER: LazyLock<Mutex<CatalogManager>> = LazyLock::new(|| {
+    Mutex::new(CatalogManager::new())
+});
+
 pub struct CatalogManager {
     pub catalog_definitions: Vec<CatalogDefinition>
 }
@@ -36,8 +41,8 @@ impl CatalogManager {
             catalog_definitions: Vec::new()
         }
     }
-    pub fn init(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        let toml_str = fs::read_to_string("../../../config/catalog.toml")?;
+    pub fn init(&mut self, config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let toml_str = fs::read_to_string(config_path)?;
         let catalog_configs: CatalogConfigs = toml::from_str(&toml_str)?;
         let mut name_set: HashSet<String> = HashSet::new();
 
@@ -68,7 +73,7 @@ mod tests {
     #[test]
     fn test_parse_iceberg_catalog_definition() {
         let mut catalog_manager = CatalogManager::new();
-        catalog_manager.init().expect("Failed to init catalog manager");
+        catalog_manager.init("x").expect("Failed to init catalog manager");
         // assert!(catalog_manager.init().is_ok());
     }
 }

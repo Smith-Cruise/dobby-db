@@ -15,3 +15,5 @@ futures = { workspace = true }
 arrow-schema = { workspace = true }
 arrow-array = { workspace = true }
 prost = "0.13.5"
+clap = { workspace = true }
+dobbydb-common-catalog = {workspace = true}

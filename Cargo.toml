@@ -15,6 +15,7 @@ members = [
 arrow-flight = { version = "55.2.0", features = ["cli","flight-sql","tls"] }
 tokio = { version = "1.46.0", features = ["macros", "rt", "rt-multi-thread"] , default-features = false}
 tonic = { version = "0.12.3", features = ["transport", "codegen", "prost"] , default-features = false}
+clap = { version = "4.5.41", features = ["derive"] }
 arrow = "55.2.0"
 arrow-array = "55.2.0"
 arrow-cast = "55.2.0"
@@ -22,3 +23,4 @@ arrow-schema = "55.2.0"
 futures = "0.3.31"
 
 dobbydb-common-base = {path = "src/common/base"}
+dobbydb-common-catalog = {path = "src/common/catalog"}

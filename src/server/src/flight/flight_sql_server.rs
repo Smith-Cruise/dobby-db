@@ -1,25 +1,28 @@
 use arrow_array::{RecordBatch, StringArray};
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 use tonic::{Request, Response, Status};
 
 use arrow_flight::encode::FlightDataEncoderBuilder;
 use arrow_flight::sql::server::FlightSqlService;
-use arrow_flight::sql::{
-    CommandGetCatalogs
-    , ProstMessageExt, SqlInfo
-};
+use arrow_flight::sql::{CommandGetCatalogs, ProstMessageExt, SqlInfo};
 use arrow_flight::{
-    flight_service_server::FlightService, FlightDescriptor, FlightEndpoint,
-    FlightInfo,
-    Ticket,
+    flight_service_server::FlightService, FlightDescriptor, FlightEndpoint, FlightInfo, Ticket,
 };
 use arrow_schema::{DataType, Field, Schema};
+use dobbydb_common_catalog::catalog::{CatalogDefinition, CATALOG_MANAGER};
 use futures::TryStreamExt;
 use prost::Message;
 use tonic::codegen::Bytes;
 
 #[derive(Clone)]
 pub struct DobbyDBFlightService {}
+
+static FLIGHT_CATALOG_SCHEMA: LazyLock<Schema> = LazyLock::new(|| {
+    Schema::new(vec![
+        Field::new("catalog_name", DataType::Utf8, false),
+        Field::new("catalog_type", DataType::Utf8, false),
+    ])
+});
 
 #[tonic::async_trait]
 impl FlightSqlService for DobbyDBFlightService {
@@ -30,7 +33,6 @@ impl FlightSqlService for DobbyDBFlightService {
         query: CommandGetCatalogs,
         _request: Request<FlightDescriptor>,
     ) -> Result<Response<FlightInfo>, Status> {
-        let catalog_schema = Schema::new(vec![Field::new("catalog_name", DataType::Utf8, false)]);
         let ticket = Ticket {
             ticket: Bytes::from(query.as_any().encode_to_vec()),
         };
@@ -42,9 +44,8 @@ impl FlightSqlService for DobbyDBFlightService {
             .with_total_records(-1)
             .with_ordered(false)
             .with_endpoint(endpoint)
-            .try_with_schema(&catalog_schema)
+            .try_with_schema(&FLIGHT_CATALOG_SCHEMA)
             .map_err(|err| Status::internal(format!("{err:?}")))?;
-        println!("get flight info catalogs");
         Ok(Response::new(flight_info))
     }
 
@@ -54,17 +55,32 @@ impl FlightSqlService for DobbyDBFlightService {
         request: Request<Ticket>,
     ) -> Result<Response<<Self as FlightService>::DoGetStream>, Status> {
         println!("ticket is {}", request.into_inner().to_string());
-        let catalog_schema = Arc::new(Schema::new(vec![Field::new(
-            "catalog_name",
-            DataType::Utf8,
-            false,
-        )]));
-        let catalogs = StringArray::from(vec!["default", "system"]);
-        let batch = RecordBatch::try_new(Arc::clone(&catalog_schema), vec![Arc::new(catalogs)])
-            .map_err(|e| Status::internal(e.to_string()))?;
+        let mut catalog_names: Vec<String> = Vec::new();
+        let mut catalog_types: Vec<String> = Vec::new();
+        let catalog_definitions = &CATALOG_MANAGER.lock().unwrap().catalog_definitions;
+        for catalog_definition in catalog_definitions {
+            match catalog_definition {
+                CatalogDefinition::Iceberg(each) => {
+                    catalog_names.push(each.name.clone());
+                    catalog_types.push("Iceberg".to_string());
+                }
+                CatalogDefinition::Hive(each) => {
+                    catalog_names.push(each.name.clone());
+                    catalog_types.push("Hive".to_string());
+                }
+            }
+        }
+        let batch = RecordBatch::try_new(
+            Arc::new(FLIGHT_CATALOG_SCHEMA.clone()),
+            vec![
+                Arc::new(StringArray::from(catalog_names)),
+                Arc::new(StringArray::from(catalog_types)),
+            ],
+        )
+        .map_err(|e| Status::internal(e.to_string()))?;
 
         let stream = FlightDataEncoderBuilder::new()
-            .with_schema(Arc::clone(&catalog_schema))
+            .with_schema(Arc::new(FLIGHT_CATALOG_SCHEMA.clone()))
             .build(futures::stream::once(async { Ok(batch) }))
             .map_err(|e| Status::internal(e.to_string()));
         Ok(Response::new(Box::pin(stream)))
