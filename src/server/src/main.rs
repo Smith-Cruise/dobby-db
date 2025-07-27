@@ -1,7 +1,6 @@
 use arrow_flight::flight_service_server::FlightServiceServer;
 use clap::Parser;
 use tonic::transport::Server;
-use dobbydb_common_catalog::catalog::{CatalogManager, CATALOG_MANAGER};
 
 mod flight;
 
@@ -22,7 +21,7 @@ impl DobbyDBServer {
     }
 
     pub fn init(&mut self, config: DobbyDBServerConfig) -> Result<(), Box<dyn std::error::Error>> {
-        CATALOG_MANAGER.lock().unwrap().init(&config.config_path)?;
+        // CATALOG_MANAGER.lock().unwrap().init(&config.config_path)?;
         Ok(())
     }
     

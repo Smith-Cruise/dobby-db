@@ -9,7 +9,6 @@ use arrow_flight::{
     flight_service_server::FlightService, FlightDescriptor, FlightEndpoint, FlightInfo, Ticket,
 };
 use arrow_schema::{DataType, Field, Schema};
-use dobbydb_common_catalog::catalog::{CatalogDefinition, CATALOG_MANAGER};
 use futures::TryStreamExt;
 use prost::Message;
 use tonic::codegen::Bytes;
@@ -57,19 +56,19 @@ impl FlightSqlService for DobbyDBFlightService {
         println!("ticket is {}", request.into_inner().to_string());
         let mut catalog_names: Vec<String> = Vec::new();
         let mut catalog_types: Vec<String> = Vec::new();
-        let catalog_definitions = &CATALOG_MANAGER.lock().unwrap().catalog_definitions;
-        for catalog_definition in catalog_definitions {
-            match catalog_definition {
-                CatalogDefinition::Iceberg(each) => {
-                    catalog_names.push(each.name.clone());
-                    catalog_types.push("Iceberg".to_string());
-                }
-                CatalogDefinition::Hive(each) => {
-                    catalog_names.push(each.name.clone());
-                    catalog_types.push("Hive".to_string());
-                }
-            }
-        }
+        // let catalog_definitions = &CATALOG_MANAGER.lock().unwrap().catalog_definitions;
+        // for catalog_definition in catalog_definitions {
+        //     match catalog_definition {
+        //         CatalogDefinition::Iceberg(each) => {
+        //             catalog_names.push(each.name.clone());
+        //             catalog_types.push("Iceberg".to_string());
+        //         }
+        //         CatalogDefinition::Hive(each) => {
+        //             catalog_names.push(each.name.clone());
+        //             catalog_types.push("Hive".to_string());
+        //         }
+        //     }
+        // }
         let batch = RecordBatch::try_new(
             Arc::new(FLIGHT_CATALOG_SCHEMA.clone()),
             vec![

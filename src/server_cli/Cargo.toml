@@ -1,0 +1,16 @@
+[package]
+name = "dobbydb-server-cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "dobbydb-server-cli"
+path = "src/main.rs"
+
+[dependencies]
+datafusion-cli = {workspace = true}
+datafusion = {workspace = true}
+tokio = {workspace = true}
+clap = { workspace = true }
+dobbydb-common-catalog = {workspace = true}

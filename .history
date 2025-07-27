@@ -1,0 +1,5 @@
+#V2
+show tables;
+show schemas;
+show all;
+select * from table_1;

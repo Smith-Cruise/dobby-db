@@ -9,7 +9,7 @@ members = [
     "src/client_cli", "src/common/base",
     "src/common/catalog",
     "src/server"
-]
+, "src/server_cli"]
 
 [workspace.dependencies]
 arrow-flight = { version = "55.2.0", features = ["cli","flight-sql","tls"] }
@@ -21,6 +21,8 @@ arrow-array = "55.2.0"
 arrow-cast = "55.2.0"
 arrow-schema = "55.2.0"
 futures = "0.3.31"
-
+datafusion-cli = "48.0.1"
+datafusion = "48.0.1"
+async-trait = "0.1.88"
 dobbydb-common-base = {path = "src/common/base"}
 dobbydb-common-catalog = {path = "src/common/catalog"}
