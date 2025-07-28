@@ -14,3 +14,4 @@ datafusion = {workspace = true}
 tokio = {workspace = true}
 clap = { workspace = true }
 dobbydb-common-catalog = {workspace = true}
+dobbydb-common-base = {workspace = true}

@@ -9,3 +9,5 @@ serde = { version = "1.0.219", features = ["derive"] }
 dobbydb-common-base = {workspace = true}
 datafusion = {workspace = true}
 async-trait = {workspace = true}
+aws-sdk-glue = "1.110.0"
+aws-config = "1.8.3"
