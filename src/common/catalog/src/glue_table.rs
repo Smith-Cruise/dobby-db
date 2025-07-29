@@ -1,23 +1,52 @@
 use std::any::Any;
+use std::collections::HashMap;
 use std::sync::Arc;
 use async_trait::async_trait;
-use datafusion::arrow::datatypes::SchemaRef;
+use aws_sdk_glue::types::Table;
+use datafusion::arrow::datatypes::{DataType, Field, Schema, SchemaRef};
 use datafusion::catalog::{Session, TableProvider};
 use datafusion::common::not_impl_err;
 use datafusion::datasource::TableType;
+use datafusion::error::DataFusionError;
 use datafusion::logical_expr::Expr;
 use datafusion::physical_plan::ExecutionPlan;
+use dobbydb_common_base::config_key::ICEBERG_METADATA_LOCATION;
 
 #[derive(Debug)]
-struct GlueTable {
+pub struct GlueTable {
     name: String,
-    glue_table: GlueTable,
+    glue_table: Table,
     schema: SchemaRef,
     table_type: TableType,
 }
 
 impl GlueTable {
+    pub fn try_new(name: String, glue_table: Table) -> Result<Self, DataFusionError> {
+        let table_location = get_metadata_location(&glue_table.parameters)?;
+        let schema = Schema::new(vec![
+            Field::new("catalog_name", DataType::Utf8, false),
+            Field::new("catalog_type", DataType::Utf8, false),
+        ]);
+        Ok(GlueTable {
+            name,
+            glue_table,
+            schema: SchemaRef::new(schema),
+            table_type: TableType::Base
+        })
+    }
+}
 
+fn get_metadata_location(parameters: &Option<HashMap<String, String>>) -> Result<String, DataFusionError> {
+    if let Some (parameters) = parameters {
+        let metadata = parameters.get(ICEBERG_METADATA_LOCATION).map(|v| v.clone());
+        if let Some(metadata) = metadata {
+            Ok(metadata)
+        } else {
+            Err(DataFusionError::Configuration("invalid table parameters".to_string()))
+        }
+    } else {
+        Err(DataFusionError::Configuration("invalid table parameters".to_string()))
+    }
 }
 
 #[async_trait]

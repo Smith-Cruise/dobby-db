@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use aws_sdk_glue::types::Database;
 use datafusion::catalog::{AsyncSchemaProvider, SchemaProvider, TableProvider};
 use datafusion::error::DataFusionError;
+use crate::glue_table::GlueTable;
 
 pub struct GlueSchema {
     name: String,
@@ -26,7 +27,7 @@ impl AsyncSchemaProvider for GlueSchema {
         let resp = self.glue_client.get_table().database_name(name.clone()).name(name).send().await.map_err(|e| DataFusionError::External(Box::new(e)))?;
         match resp.table { 
             Some(table) => {
-                
+                Ok(Some(Arc::new(GlueTable::try_new(table.name.clone(), table)?)))
             },
             None => {
                 Ok(None)

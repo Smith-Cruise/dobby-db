@@ -5,25 +5,27 @@ use std::sync::{Arc, LazyLock, Mutex};
 use datafusion::catalog::{CatalogProvider, CatalogProviderList, SchemaProvider};
 use datafusion::common::cse::FoundCommonNodes::No;
 use datafusion::common::not_impl_err;
+use datafusion::error::DataFusionError;
 use serde::Deserialize;
 use dobbydb_common_base::error::DobbyDBError;
+use crate::glue_catalog::GlueCatalog;
 use crate::iceberg_catalog::IcebergCatalog;
 
+
 #[derive(Debug, Clone, Deserialize)]
-pub struct HiveCatalogProperties {
+pub struct GlueCatalogProperties {
     pub name: String,
-    pub hms_url: String
-}
-#[derive(Debug, Clone, Deserialize)]
-pub struct IcebergCatalogProperties {
-    pub name: String,
-    pub url: String
+    #[serde(rename = "aws-glue-region")]
+    pub aws_glue_region: Option<String>,
+    #[serde(rename = "aws-glue-access-key")]
+    pub aws_glue_access_key: Option<String>,
+    #[serde(rename = "aws-glue-secret-key")]
+    pub aws_glue_secret_key: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 struct CatalogConfigs {
-    hive: Vec<HiveCatalogProperties>,
-    iceberg: Vec<IcebergCatalogProperties>
+    glue: Vec<GlueCatalogProperties>,
 }
 
 #[derive(Debug)]
@@ -37,24 +39,17 @@ impl DobbyDBCatalogManager {
             catalogs: HashMap::new()
         }
     }
-    pub fn init_from_path(&mut self, config_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn init_from_path(&mut self, config_path: &str) -> Result<(), DataFusionError> {
         let toml_str = fs::read_to_string(config_path)?;
         let catalog_configs: CatalogConfigs = toml::from_str(&toml_str)?;
         let mut name_set: HashSet<String> = HashSet::new();
-        //
-        // for each in &catalog_configs.hive {
-        //     if name_set.contains(&each.name) {
-        //         return Err(Box::new(DobbyDBError::InvalidArgument("duplicate catalog name".to_string())));
-        //     }
-        //     self.catalog_definitions.push(CatalogDefinition::Hive(each.clone()));
-        //     name_set.insert(each.name.clone());
-        // }
 
-        for each in &catalog_configs.iceberg {
+
+        for each in &catalog_configs.glue {
             if name_set.contains(&each.name) {
-                return Err(Box::new(DobbyDBError::InvalidArgument("duplicate catalog name".to_string())));
+                return Err(DataFusionError::Configuration("duplicate catalog name".to_string()));
             }
-            let iceberg_catalog = IcebergCatalog::try_new()?;
+            let glue_catalog = GlueCatalog::try_new(each.clone()).await?;
             self.catalogs.insert("iceberg_test".to_string(), Arc::new(iceberg_catalog));
             name_set.insert(each.name.clone());
         }

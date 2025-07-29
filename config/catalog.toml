@@ -1,4 +1,4 @@
-[[hive]]
+[[glue]]
 name = "hms_catalog"
 hms_url = "thrift:127.0.0.1:9083"
 
