@@ -2,10 +2,9 @@ use clap::Parser;
 use datafusion::prelude::{SessionConfig, SessionContext};
 use datafusion_cli::exec;
 use datafusion_cli::print_format::PrintFormat;
-use datafusion_cli::print_format::PrintFormat::Automatic;
 use datafusion_cli::print_options::{MaxRows, PrintOptions};
 use dobbydb_common_catalog::catalog::DobbyDBCatalogManager;
-use std::sync::Arc;
+use datafusion::error::DataFusionError;
 
 #[derive(Debug, Parser, PartialEq)]
 #[clap(author, version, about, long_about= None)]
@@ -39,16 +38,16 @@ async fn main() {
     run_from_command().await.unwrap();
 }
 
-async fn run_from_command() -> Result<(), Box<dyn std::error::Error>> {
+async fn run_from_command() -> Result<(), DataFusionError> {
     let args = Args::parse();
     let mut catalog_manager = DobbyDBCatalogManager::new();
-    catalog_manager.init_from_path(args.config_path.as_str())?;
+    catalog_manager.init_from_path(args.config_path.as_str()).await?;
     let config = SessionConfig::new()
         .with_information_schema(true)
         .with_default_catalog_and_schema("iceberg", "p");
     let ctx = SessionContext::new_with_config(config);
 
-    ctx.register_catalog_list(Arc::new(catalog_manager));
+    // ctx.register_catalog_list(Arc::new(catalog_manager));
     let mut print_options = PrintOptions {
         format: args.format,
         quiet: args.quiet,
@@ -57,5 +56,5 @@ async fn run_from_command() -> Result<(), Box<dyn std::error::Error>> {
     };
     println!("Hello, world!");
 
-    Ok(exec::exec_from_repl(&ctx, &mut print_options).await?)
+    Ok(exec::exec_from_repl(&ctx, &mut print_options).await.map_err(|e| DataFusionError::External(Box::new(e)))?)
 }
