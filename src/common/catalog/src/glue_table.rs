@@ -15,7 +15,7 @@ use dobbydb_common_base::config_key::ICEBERG_METADATA_LOCATION;
 #[derive(Debug)]
 pub struct GlueTable {
     name: String,
-    glue_table: Table,
+    table_location: String,
     schema: SchemaRef,
     table_type: TableType,
 }
@@ -29,7 +29,7 @@ impl GlueTable {
         ]);
         Ok(GlueTable {
             name,
-            glue_table,
+            table_location,
             schema: SchemaRef::new(schema),
             table_type: TableType::Base
         })

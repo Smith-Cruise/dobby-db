@@ -28,8 +28,10 @@ struct CatalogConfigs {
     glue: Vec<GlueCatalogProperties>,
 }
 
+#[derive(Debug)]
 pub struct DobbyDBCatalogManager {
-    catalogs: HashMap<String, Arc<dyn AsyncCatalogProvider>>
+    // catalogs: HashMap<String, Arc<dyn AsyncCatalogProvider>>
+    catalogs: HashMap<String, Arc<dyn CatalogProvider>>
 }
 
 impl DobbyDBCatalogManager {
@@ -55,11 +57,30 @@ impl DobbyDBCatalogManager {
     }
 }
 
-#[async_trait]
-impl AsyncCatalogProviderList for DobbyDBCatalogManager {
-    async fn catalog(&self, name: &str) -> datafusion::common::Result<Option<Arc<dyn AsyncCatalogProvider>>> {
-        let catalog = self.catalogs.get(name).cloned();
-        Ok(catalog)
+// #[async_trait]
+// impl AsyncCatalogProviderList for DobbyDBCatalogManager {
+//     async fn catalog(&self, name: &str) -> datafusion::common::Result<Option<Arc<dyn AsyncCatalogProvider>>> {
+//         let catalog = self.catalogs.get(name).cloned();
+//         Ok(catalog)
+//     }
+// }
+
+impl CatalogProviderList for DobbyDBCatalogManager {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn register_catalog(&self, name: String, catalog: Arc<dyn CatalogProvider>) -> Option<Arc<dyn CatalogProvider>> {
+        None
+    }
+
+    fn catalog_names(&self) -> Vec<String> {
+        self.catalogs.keys().cloned().collect()
+    }
+
+    fn catalog(&self, name: &str) -> Option<Arc<dyn CatalogProvider>> {
+        let catalog = self.catalogs.get(name)?;
+        Some(catalog.clone())
     }
 }
 

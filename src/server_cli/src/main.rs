@@ -5,6 +5,7 @@ use datafusion_cli::print_format::PrintFormat;
 use datafusion_cli::print_options::{MaxRows, PrintOptions};
 use dobbydb_common_catalog::catalog::DobbyDBCatalogManager;
 use datafusion::error::DataFusionError;
+use datafusion::sql::sqlparser::ast::ContextModifier::Session;
 
 #[derive(Debug, Parser, PartialEq)]
 #[clap(author, version, about, long_about= None)]
@@ -35,7 +36,15 @@ struct Args {
 
 #[tokio::main]
 async fn main() {
-    run_from_command().await.unwrap();
+    //run_from_command().await.unwrap();
+
+    let ctx = SessionContext::new();
+    let sql = "SELECT * from remote_schema.remote_table";
+    let state = ctx.state();
+    let dialect = state.config().options().sql_parser.dialect.as_str();
+    let statement = state.sql_to_statement(sql, dialect).unwrap();
+    let references = state.resolve_table_references(&statement).unwrap();
+    // ctx.register_cat
 }
 
 async fn run_from_command() -> Result<(), DataFusionError> {
