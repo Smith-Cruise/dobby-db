@@ -1,12 +1,9 @@
 use std::any::Any;
 use crate::glue_schema::GlueSchema;
-use async_trait::async_trait;
 use aws_config::Region;
 use aws_sdk_glue::config::Credentials;
-use datafusion::catalog::{AsyncCatalogProvider, AsyncSchemaProvider, CatalogProvider, SchemaProvider};
+use datafusion::catalog::{CatalogProvider, SchemaProvider};
 use datafusion::error::DataFusionError;
-use dobbydb_common_base::config_key::{AWS_GLUE_ACCESS_KEY, AWS_GLUE_REGION, AWS_GLUE_SECRET_KEY};
-use dobbydb_common_base::error::DobbyDBError;
 use std::collections::HashMap;
 use std::sync::Arc;
 use crate::catalog::GlueCatalogProperties;
@@ -19,7 +16,7 @@ pub struct GlueCatalog {
 }
 
 impl GlueCatalog {
-    pub async fn try_new(properties: GlueCatalogProperties) -> Result<Self, DataFusionError> {
+    pub async fn try_new(properties: &GlueCatalogProperties) -> Result<Self, DataFusionError> {
         let mut aws_config = aws_config::defaults(aws_config::BehaviorVersion::latest());
         if let (Some(access_key), Some(secret_key)) = (&properties.aws_glue_access_key, &properties.aws_glue_secret_key) {
             let credential_provider =
@@ -32,17 +29,15 @@ impl GlueCatalog {
         let aws_config = aws_config.load().await;
         let glue_client = aws_sdk_glue::Client::new(&aws_config);
         let mut total_schemas: HashMap<String, Arc<dyn SchemaProvider>> = HashMap::new();
-        let list_schemas_resp = glue_client.list_schemas().send().await.map_err(|e| DataFusionError::External(Box::new(e)))?;
-        if let Some(schemas) = list_schemas_resp.schemas {
-            for scheme in schemas {
-                let schema_name = scheme.schema_name.unwrap_or_else(|| "default".to_string());
-                let glue_schema = GlueSchema::try_new(&glue_client, schema_name.clone()).await?;
-                total_schemas.insert(schema_name.clone(), Arc::new(glue_schema));
-            }
+        let dbs = glue_client.get_databases().send().await.map_err(|e| DataFusionError::External(Box::new(e)))?;
+        // let list_schemas_resp = glue_client.list_schemas().send().await.map_err(|e| DataFusionError::External(Box::new(e)))?;
+        for database in dbs.database_list {
+            let glue_schema = GlueSchema::try_new(&glue_client, &database.name).await?;
+            total_schemas.insert(database.name.clone(), Arc::new(glue_schema));
         }
         Ok(GlueCatalog {
-            glue_client: glue_client,
-            config: properties,
+            glue_client,
+            config: properties.clone(),
             schemas: total_schemas,
         })
     }

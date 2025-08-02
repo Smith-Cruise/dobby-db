@@ -21,14 +21,14 @@ pub struct GlueTable {
 }
 
 impl GlueTable {
-    pub fn try_new(name: String, glue_table: Table) -> Result<Self, DataFusionError> {
+    pub fn try_new(name: &str, glue_table: &Table) -> Result<Self, DataFusionError> {
         let table_location = get_metadata_location(&glue_table.parameters)?;
         let schema = Schema::new(vec![
             Field::new("catalog_name", DataType::Utf8, false),
             Field::new("catalog_type", DataType::Utf8, false),
         ]);
         Ok(GlueTable {
-            name,
+            name: name.to_string(),
             table_location,
             schema: SchemaRef::new(schema),
             table_type: TableType::Base

@@ -1,14 +1,10 @@
 use std::{fs};
 use std::any::Any;
 use std::collections::{HashMap, HashSet};
-use std::sync::{Arc, LazyLock, Mutex};
-use async_trait::async_trait;
-use datafusion::catalog::{AsyncCatalogProvider, AsyncCatalogProviderList, CatalogProvider, CatalogProviderList, SchemaProvider};
-use datafusion::common::cse::FoundCommonNodes::No;
-use datafusion::common::not_impl_err;
+use std::sync::Arc;
+use datafusion::catalog::{CatalogProvider, CatalogProviderList};
 use datafusion::error::DataFusionError;
 use serde::Deserialize;
-use dobbydb_common_base::error::DobbyDBError;
 use crate::glue_catalog::GlueCatalog;
 
 
@@ -46,10 +42,11 @@ impl DobbyDBCatalogManager {
         let mut name_set: HashSet<String> = HashSet::new();
 
         for each in &catalog_configs.glue {
+            println!("start to load catalog config: {:?}", each);
             if name_set.contains(&each.name) {
                 return Err(DataFusionError::Configuration("duplicate catalog name".to_string()));
             }
-            let glue_catalog = GlueCatalog::try_new(each.clone()).await?;
+            let glue_catalog = GlueCatalog::try_new(&each).await?;
             self.catalogs.insert(each.name.clone(), Arc::new(glue_catalog));
             name_set.insert(each.name.clone());
         }
@@ -86,7 +83,7 @@ impl CatalogProviderList for DobbyDBCatalogManager {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
 
     #[test]
     fn test_parse_iceberg_catalog_definition() {

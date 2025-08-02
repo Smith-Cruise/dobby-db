@@ -54,8 +54,8 @@ impl FlightSqlService for DobbyDBFlightService {
         request: Request<Ticket>,
     ) -> Result<Response<<Self as FlightService>::DoGetStream>, Status> {
         println!("ticket is {}", request.into_inner().to_string());
-        let mut catalog_names: Vec<String> = Vec::new();
-        let mut catalog_types: Vec<String> = Vec::new();
+        let catalog_names: Vec<String> = Vec::new();
+        let catalog_types: Vec<String> = Vec::new();
         // let catalog_definitions = &CATALOG_MANAGER.lock().unwrap().catalog_definitions;
         // for catalog_definition in catalog_definitions {
         //     match catalog_definition {
