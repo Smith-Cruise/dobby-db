@@ -1,4 +1,6 @@
+use crate::catalog_config::GlueCatalogConfig;
 use crate::glue_table::GlueTable;
+use crate::table_format::table::TableIdentifier;
 use async_trait::async_trait;
 use datafusion::catalog::{SchemaProvider, TableProvider};
 use datafusion::error::DataFusionError;
@@ -7,17 +9,16 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 #[derive(Debug)]
-pub struct GlueSchema {
+pub struct GlueDatabase {
     database_name: String,
     tables: HashMap<String, Arc<dyn TableProvider>>,
-    //glue_database: Database,
-    //glue_client: Arc<aws_sdk_glue::Client>,
 }
 
-impl GlueSchema {
+impl GlueDatabase {
     pub async fn try_new(
         glue_client: &aws_sdk_glue::Client,
         database_name: &str,
+        glue_config: &GlueCatalogConfig,
     ) -> Result<Self, DataFusionError> {
         let mut hash_tables: HashMap<String, Arc<dyn TableProvider>> = HashMap::new();
         let resp = glue_client
@@ -28,12 +29,16 @@ impl GlueSchema {
             .map_err(|e| DataFusionError::External(Box::new(e)))?;
         if let Some(tables) = resp.table_list {
             for table in tables {
-                let table_name = table.name.clone();
-                let build_table = GlueTable::try_new(table.name(), &table)?;
-                hash_tables.insert(table_name.clone(), Arc::new(build_table));
+                let build_table = GlueTable::try_new(
+                    TableIdentifier::new(database_name, &table.name),
+                    &table,
+                    glue_config,
+                )
+                .await?;
+                hash_tables.insert(table.name.clone().clone(), Arc::new(build_table));
             }
         }
-        Ok(GlueSchema {
+        Ok(GlueDatabase {
             database_name: database_name.to_string(),
             tables: hash_tables,
         })
@@ -41,7 +46,7 @@ impl GlueSchema {
 }
 
 #[async_trait]
-impl SchemaProvider for GlueSchema {
+impl SchemaProvider for GlueDatabase {
     fn as_any(&self) -> &dyn Any {
         self
     }
@@ -61,27 +66,3 @@ impl SchemaProvider for GlueSchema {
         self.tables.contains_key(name)
     }
 }
-
-// #[async_trait]
-// impl AsyncSchemaProvider for GlueSchema {
-//     async fn table(
-//         &self,
-//         name: &str,
-//     ) -> datafusion::common::Result<Option<Arc<dyn TableProvider>>> {
-//         let resp = self
-//             .glue_client
-//             .get_table()
-//             .database_name(self.schema_name.clone())
-//             .name(name)
-//             .send()
-//             .await
-//             .map_err(|e| DataFusionError::External(Box::new(e)))?;
-//         match resp.table {
-//             Some(table) => Ok(Some(Arc::new(GlueTable::try_new(
-//                 table.name.clone(),
-//                 table,
-//             )?))),
-//             None => Ok(None),
-//         }
-//     }
-// }

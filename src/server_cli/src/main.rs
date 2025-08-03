@@ -4,7 +4,7 @@ use datafusion::prelude::{SessionConfig, SessionContext};
 use datafusion_cli::exec;
 use datafusion_cli::print_format::PrintFormat;
 use datafusion_cli::print_options::{MaxRows, PrintOptions};
-use dobbydb_common_catalog::catalog::DobbyDBCatalogManager;
+use dobbydb_common_catalog::catalog::{DobbyCatalogManager};
 use datafusion::error::DataFusionError;
 
 #[derive(Debug, Parser, PartialEq)]
@@ -49,7 +49,7 @@ async fn main() -> Result<(), DataFusionError> {
 
 async fn run_from_command() -> Result<(), DataFusionError> {
     let args = Args::parse();
-    let mut catalog_manager = DobbyDBCatalogManager::new();
+    let mut catalog_manager = DobbyCatalogManager::new();
     catalog_manager.init_from_path(args.config_path.as_str()).await?;
     let config = SessionConfig::new()
         .with_information_schema(true);
