@@ -1,7 +1,5 @@
 use crate::catalog_config::{DobbyCatalogConfig, GlueCatalogConfig};
-use crate::table_format::external_table::{
-    ExternalIcebergTable, ExternalTable, ExternalTableFormat,
-};
+use crate::table_format::external_table::{ExternalIcebergTable, ExternalTable, ExternalTableFormat, IcebergTableScan};
 use crate::table_format::table::TableIdentifier;
 use async_trait::async_trait;
 use aws_sdk_glue::types::Table;
@@ -17,6 +15,7 @@ use iceberg::arrow::schema_to_arrow_schema;
 use std::any::Any;
 use std::collections::HashMap;
 use std::sync::Arc;
+use iceberg::Error;
 
 #[derive(Debug)]
 pub struct GlueTable {
@@ -103,6 +102,21 @@ impl TableProvider for GlueTable {
         filters: &[Expr],
         limit: Option<usize>,
     ) -> datafusion::common::Result<Arc<dyn ExecutionPlan>> {
-        not_impl_err!("not impl")
+        return match &self.external_table {
+            ExternalTable::Iceberg(table) => {
+                Ok(Arc::new(IcebergTableScan::new(
+                    table.static_table.clone().into_table(),
+                    table.static_table.metadata().current_snapshot_id(),
+                    self.schema.clone(),
+                    projection,
+                    filters,
+                )))
+            },
+            _ => {
+                Err(DataFusionError::NotImplemented("not yet implemented".to_string()))
+            }
+        }
+
     }
 }
+

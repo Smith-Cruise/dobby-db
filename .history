@@ -12,3 +12,6 @@ show tables;
 select * from tpch_1g.partsupp;
 select * from glue_catalog.tpch_1g.partsupp;
 show tables;
+show columns from glue_catalog.tpch_1g.part;
+show tables;
+select * from glue_catalog.tpch_1g.nation;

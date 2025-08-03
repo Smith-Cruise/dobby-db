@@ -12,3 +12,5 @@ async-trait = {workspace = true}
 aws-sdk-glue = "1.110.0"
 aws-config = "1.8.3"
 iceberg = "0.6.0"
+iceberg-datafusion = "0.6.0"
+futures = "0.3.31"
