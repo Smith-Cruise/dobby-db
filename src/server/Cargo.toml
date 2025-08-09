@@ -17,3 +17,5 @@ arrow-array = { workspace = true }
 prost = "0.13.5"
 clap = { workspace = true }
 dobbydb-common-catalog = {workspace = true}
+datafusion = {workspace = true}
+sqlparser = {workspace = true}

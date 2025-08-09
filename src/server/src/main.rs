@@ -3,6 +3,7 @@ use clap::Parser;
 use tonic::transport::Server;
 
 mod flight;
+mod parser;
 
 #[derive(Parser, Debug)]
 #[command(version, about)]
